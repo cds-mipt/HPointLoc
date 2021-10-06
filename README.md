@@ -46,6 +46,8 @@ The experiments were held on the **HPointLoc-Val** and **HPointLoc-ALL** dataset
 
 ## Quick start to evaluate PNTR pipeline
 
+### Without Docker:
+
 ```bash
 git clone --recurse-submodules https://github.com/cds-mipt/HPointLoc
 conda env create -f environment.yml
@@ -57,3 +59,25 @@ cd /path/to/HPointLoc_repo
 python pipelines/pipeline_evaluate.py --dataset_root /path/to/extracted_dataset --image-retrieval patchnetvlad --keypoints-matching superpoint_superglue --optimizer-cloud teaser
 ```
 
+### With Docker:
+
+1. Clone repository
+```bash
+git clone --recurse-submodules https://github.com/cds-mipt/HPointLoc
+cd HPointLoc
+```
+
+2. Build docker image:
+```bash
+bash docker/build.sh
+```
+
+3. Start container:
+```bash
+bash docker/start.sh
+```
+
+4. Enter container:
+```bash
+bash docker/into.sh
+```
