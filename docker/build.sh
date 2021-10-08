@@ -16,4 +16,6 @@ fi
 
 docker build . \
     -f docker/$DOCKERFILE \
+    --build-arg UID=$(id -u) \
+    --build-arg GID=$(id -g) \
     -t hpointloc:latest

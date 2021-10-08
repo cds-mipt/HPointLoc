@@ -3,7 +3,8 @@ FROM nvcr.io/nvidia/cuda:11.1.1-devel-ubuntu20.04
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install dependencies
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+RUN echo && echo "=======> Installing dependencies..." && echo && \
+    apt-get update && apt-get upgrade -y && apt-get install -y \
     tmux \
     openssh-server \
     tree \
@@ -13,16 +14,22 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     wget \
     build-essential \
     python3-pip \
+    libgl1-mesa-glx \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PyTorch
-RUN pip3 install -f https://download.pytorch.org/whl/torch_stable.html \
+RUN echo && echo "=======> Installing PyTorch..." && echo && \
+    pip3 install -f https://download.pytorch.org/whl/torch_stable.html \
     torch==1.9.1+cu111 \
     torchvision==0.10.1+cu111
 
 # Install requirements
 COPY requirements.txt .
-RUN pip3 install -r requirements.txt \
+RUN echo && echo "=======> Installing pip requirements..." && echo && \
+    pip3 install -r requirements.txt \
     && rm requirements.txt
 
 EXPOSE 22
@@ -34,6 +41,13 @@ ARG GID=1000
 # default password
 ARG PW=user
 
-RUN useradd -m ${USER} --uid=${UID} && echo "${USER}:${PW}" | chpasswd && adduser ${USER} sudo
+RUN echo && echo "=======> Creating user..." && echo && \
+    echo "UID=${UID}, GID=${GID}" && echo && \
+    groupadd -f ${USER} --gid=${GID} && \
+    useradd -m ${USER} --uid=${UID} --gid=${GID} && echo "${USER}:${PW}" | chpasswd && adduser ${USER} sudo
 WORKDIR /home/${USER}
+
+RUN echo && echo "=======> Making directories..." && echo && \
+    mkdir -p datasets && chown -R ${UID}:${GID} /home/${USER}
+
 USER ${UID}:${GID}

@@ -22,7 +22,8 @@ docker run -itd --rm \
     --env="QT_X11_NO_MITSHM=1" \
     -v $XAUTH:/root/.Xauthority \
     -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-    -v `pwd`:/home/docker_hpointloc \
+    -v `pwd`:/home/docker_hpointloc/HPointLoc:rw \
+    -v /mnt/hdd8/Datasets:/home/docker_hpointloc/datasets:rw \
     --name hpointloc \
     hpointloc:latest
 xhost -
