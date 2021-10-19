@@ -27,8 +27,7 @@ def teaser(dataset_root, path_image_retrieval, path_loc_features_matches, output
     solver_params.rotation_max_iterations = 100
     solver_params.rotation_cost_threshold = 1e-12
 
-    root_datasets = Path(dataset_root).parent
-    dataset_path =  join(root_datasets, 'HPointLoc_dataset')
+    dataset_path =  dataset_root
 
     results = {
         "(5m, 20°)": 0,

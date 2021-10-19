@@ -138,7 +138,8 @@ def pipeline_eval(dataset_root, image_retrieval, keypoints_matching,
     - 3d pose optimization (registration)
     """
     root_dir = os.getcwd()
-    query_image_path, db_image_path = preprocces_metadata(dataset_root)
+    query_image_path = dataset_root + '/imagenames_query_full.txt' 
+    db_image_path = dataset_root + '/imagenames_db_full.txt'
 
     ###image retrieval
     image_retrieval_path = join(root_dir, result_path, dataset, 'image_retrieval')
@@ -169,7 +170,7 @@ def pipeline_command_line():
     """
     parser = argparse.ArgumentParser(description=('evaluate place recognition pipeline on Habitat dataset'))
     parser.add_argument('-dst', '--dataset_root', required=True,
-                        help='name of image retrieval')
+                        help='path to dataset root')
     parser.add_argument('-f', '--force', action='store_true', default=False,
                         help='silently delete data if already exists.')
     parser.add_argument('-imgrtv', '--image-retrieval', required=True,
