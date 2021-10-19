@@ -155,8 +155,19 @@ def teaser(dataset_root, path_image_retrieval, path_loc_features_matches, output
             if angle_error < 20 and dist_error < 5:
                 results["(5m, 20°)"] += 1
 
-            final_res = {q: (m, estimated_quat_wxyz + estimated_transl + gt_quat_wxyz + gt_transl)} #qw, qx, qy, qz, tx, ty, tz, x3
-            json.dump(str(final_res), path_result_poses)
+            print(f"\nDEBUG:",
+                  f"\n\tq = {q}",
+                  f"\n\tm = {m}",
+                  f"\n\testimated_quat_wxyz = {estimated_quat_wxyz}",
+                  f"\n\testimated_transl = {estimated_transl}",
+                  f"\n\tgt_quat_wxyz = {gt_quat_wxyz}",
+                  f"\n\tgt_transl = {gt_transl}",
+                  "\n")
+            print(f"DEBUG: path_result_poses = {path_result_poses}\n")
+
+            final_res = {q: (m, estimated_quat_wxyz, estimated_transl, gt_quat_wxyz, gt_transl)} #qw, qx, qy, qz, tx, ty, tz, x3
+            with open(path_result_poses, 'w') as result_poses_file:
+                json.dump(str(final_res), result_poses_file)
             
     for key in results.keys():
         results[key] = results[key] / query_numbers

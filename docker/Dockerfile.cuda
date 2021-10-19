@@ -12,13 +12,20 @@ RUN echo && echo "=======> Installing dependencies..." && echo && \
     vim \
     curl \
     wget \
+    git \
+    cmake \
     build-essential \
     python3-pip \
+    python3-opencv \
+    python3-numpy \
     libgl1-mesa-glx \
     ffmpeg \
     libsm6 \
     libxext6 \
-    && rm -rf /var/lib/apt/lists/*
+    libeigen3-dev \
+    libboost-all-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/bin/python3 /usr/bin/python
 
 # Install PyTorch
 RUN echo && echo "=======> Installing PyTorch..." && echo && \

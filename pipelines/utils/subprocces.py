@@ -24,6 +24,7 @@ def run_python_command(local_path: str, args: List[str], python_binary: Optional
         args.insert(0, compute_image_pairs_bin)        
 
     use_shell = sys.platform.startswith("win")
+    args.insert(0, 'python3')
     sub_process = subprocess.Popen(args, shell=use_shell)
     sub_process.wait()
     if sub_process.returncode != 0:
