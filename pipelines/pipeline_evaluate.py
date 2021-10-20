@@ -92,6 +92,9 @@ def keypoints_matching_stage(method, dataset_root, input_pairs,
             compute_image_pairs_args = ['--input_pairs', input_pairs,
                                         '--input_dir', dataset_root,  
                                         '--resize', '-1', 
+                                        '--superglue', 'outdoor', 
+                                        '--max_keypoints', '2048',
+                                        '--nms_radius', '3',
                                         '--output_dir', './3rd/SuperGluePretrainedNetwork/dump_match_pairs']
             run_python_command(command, compute_image_pairs_args, None)
         else:
@@ -157,7 +160,8 @@ def pipeline_eval(dataset_root, image_retrieval, keypoints_matching,
     local_features_path_full =  join(local_featue_path, keypoints_path)
     keypoints_matching_stage(keypoints_matching, dataset_root, pairsfile_path_full, 
                                     local_features_path_full, force, root_dir)
-
+    
+    raise Exception("Next stage not implemented yet")  # временная заглушка
     ###point cloud optimization
     output_dir = join(root_dir, result_path, dataset, 'pose_optimization')
     pose_optimization(dataset_root, pairsfile_path_full, local_features_path_full, 
@@ -191,5 +195,7 @@ def pipeline_command_line():
                   args.force, args.netvlad_config)
 
 if __name__ == '__main__':    
-    print('>>>> PNTR framework\n')
+    print('\n>>>>')
+    print('\tWelcome to PNTR framework!')
+    print('>>>>\n')
     pipeline_command_line()
