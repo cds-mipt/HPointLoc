@@ -11,7 +11,7 @@ import shutil
 from optimizers.icp import icp
 
 def image_retrieval_stage(method, dataset_root, query_path, db_path, 
-                            image_retrieval_path, topk = 1, force = False, config = 'speed'):
+                            image_retrieval_path, topk = 1, force = False, netvlad_config = 'speed'):
     """
     @:param method: name of image retrieval method
     @:param dataset_root: path to dataset
@@ -27,7 +27,7 @@ def image_retrieval_stage(method, dataset_root, query_path, db_path,
     command = exct_stage[method]
 
     if method == 'patchnetvlad':
-        configfile = '3rd/Patch-NetVLAD/patchnetvlad/configs/{}.ini'.format(config)
+        configfile = '3rd/Patch-NetVLAD/patchnetvlad/configs/{}.ini'.format(netvlad_config)
         assert os.path.isfile(configfile)
         config = configparser.ConfigParser()
         config.read(configfile)
@@ -61,7 +61,7 @@ def image_retrieval_stage(method, dataset_root, query_path, db_path,
             run_python_command(command, matching_stage_args, None)
         
         
-        pairsfile_path = f'{method}_{config}_top{topk}.txt'
+        pairsfile_path = f'{method}_{netvlad_config}_top{topk}.txt'
         pairsfile_path_full = join(image_retrieval_path, pairsfile_path)
         if not exists(pairsfile_path_full) or force:
             with open(join(image_retrieval_path , 'PatchNetVLAD_predictions.txt'), 'r') as origfile, \
@@ -131,7 +131,7 @@ def pose_optimization(dataset_root, image_retrieval, kpt_matching,
         raise Exception("Wrong name of pose_optimization method")
 
 def pipeline_eval(dataset_root, image_retrieval, keypoints_matching, 
-                                optimizer_cloud, topk, result_path, dataset, force, config):
+                  optimizer_cloud, topk, result_path, dataset, force, netvlad_config):
 
     """
     Evaluate Place recognition pipeline. Pipeline consists of 3 stages:
@@ -149,7 +149,8 @@ def pipeline_eval(dataset_root, image_retrieval, keypoints_matching,
         os.makedirs(image_retrieval_path)
     
     pairsfile_path_full = image_retrieval_stage(image_retrieval, dataset_root, query_image_path, 
-                                                    db_image_path, image_retrieval_path, topk, force, config)
+                                                db_image_path, image_retrieval_path, topk, 
+                                                force, netvlad_config)
         
     ###local features
     local_featue_path = join(root_dir, result_path, dataset, 'keypoints')

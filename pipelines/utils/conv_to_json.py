@@ -19,8 +19,8 @@ def conv_to_json(dataset_root, path_to_npz_folder, output_dir):
         q_name = pair_npz.split('_')[2]
         db_folder = pair_npz.split('_')[3]
         db_name = pair_npz.split('_')[5] 
-        q = '_'.join(pair_npz.split('_')[:4])  # TODO: в конце это используется как ключ для словаря
-        db = '_'.join(pair_npz.split('_')[4:8])  # TODO: но есть ли смысл? может использовать name?
+        # q = '_'.join(pair_npz.split('_')[:4])  # TODO: в конце это используется как ключ для словаря
+        # db = '_'.join(pair_npz.split('_')[4:8])  # TODO: но есть ли смысл? может использовать name?
 
         q_depth_file_path = join(dataset_root, q_folder, 'depth', q_name+'.png')
         db_depth_file_path = join(dataset_root, db_folder, 'depth', db_name+'.png')
@@ -42,7 +42,7 @@ def conv_to_json(dataset_root, path_to_npz_folder, output_dir):
                 q_coord_frame.append((x_q, y_q, float(q_depth[y_q, x_q])))
                 db_coord_frame.append((x_db, y_db, float(db_depth[y_db, x_db])))
     
-        dictionary_kpt = {q: q_coord_frame, db: db_coord_frame}
-        outpath = join(output_dir, q + '_' + db + '.json')
+        dictionary_kpt = {q_name: q_coord_frame, db_name: db_coord_frame}
+        outpath = join(output_dir, q_name + '_' + db_name + '.json')
         with open(outpath, 'w') as outfile:
             json.dump(str(dictionary_kpt), outfile)
