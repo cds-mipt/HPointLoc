@@ -11,7 +11,7 @@ import shutil
 from optimizers.icp import icp
 
 def image_retrieval_stage(method, dataset_root, query_path, db_path, 
-                            image_retrieval_path, topk = 1, force = False):
+                            image_retrieval_path, topk = 1, force = False, config = 'speed'):
     """
     @:param method: name of image retrieval method
     @:param dataset_root: path to dataset
@@ -27,8 +27,7 @@ def image_retrieval_stage(method, dataset_root, query_path, db_path,
     command = exct_stage[method]
 
     if method == 'patchnetvlad':
-        option = input('choose config: speed/performance \n')
-        configfile = '3rd/Patch-NetVLAD/patchnetvlad/configs/{}.ini'.format(option)
+        configfile = '3rd/Patch-NetVLAD/patchnetvlad/configs/{}.ini'.format(config)
         assert os.path.isfile(configfile)
         config = configparser.ConfigParser()
         config.read(configfile)
@@ -62,7 +61,7 @@ def image_retrieval_stage(method, dataset_root, query_path, db_path,
             run_python_command(command, matching_stage_args, None)
         
         
-        pairsfile_path = f'{method}_{option}_top{topk}.txt'
+        pairsfile_path = f'{method}_{config}_top{topk}.txt'
         pairsfile_path_full = join(image_retrieval_path, pairsfile_path)
         if not exists(pairsfile_path_full) or force:
             with open(join(image_retrieval_path , 'PatchNetVLAD_predictions.txt'), 'r') as origfile, \
@@ -129,7 +128,7 @@ def pose_optimization(dataset_root, image_retrieval, kpt_matching,
         raise Exception("Wrong name of pose_optimization method")
 
 def pipeline_eval(dataset_root, image_retrieval, keypoints_matching, 
-                                optimizer_cloud, topk, result_path, dataset, force):
+                                optimizer_cloud, topk, result_path, dataset, force, config):
 
     """
     Evaluate Place recognition pipeline. Pipeline consists of 3 stages:
@@ -147,7 +146,7 @@ def pipeline_eval(dataset_root, image_retrieval, keypoints_matching,
         os.makedirs(image_retrieval_path)
     
     pairsfile_path_full = image_retrieval_stage(image_retrieval, dataset_root, query_image_path, 
-                                                    db_image_path, image_retrieval_path, topk, force)
+                                                    db_image_path, image_retrieval_path, topk, force, config)
         
     ###local features
     local_featue_path = join(root_dir, result_path, dataset, 'keypoints')
@@ -168,24 +167,28 @@ def pipeline_command_line():
     """
     Parse the command line arguments to start place recognition .
     """
-    parser = argparse.ArgumentParser(description=('evaluate place recognition pipeline on Habitat dataset'))
-    parser.add_argument('-dst', '--dataset_root', required=True,
+    parser = argparse.ArgumentParser(description=('Evaluate place recognition pipeline on Habitat dataset'))
+    parser.add_argument('--dataset_root', required=True,
                         help='path to dataset root')
+    parser.add_argument('--image_retrieval', default='patchnetvlad',
+                        help='name of image retrieval (default: patchnetvlad)')
+    parser.add_argument('--keypoints_matching', default='superpoint_superglue',
+                        help='name of keypoints-exctraction/matching method (default: superpoint_superglue)')
+    parser.add_argument('--optimizer_cloud', default='teaser',
+                        help='name of 3d point-cloud optimizer (default: teaser)')    
+    parser.add_argument('--netvlad_config', default='speed',
+                        help='Patch-NetVLAD configuration (default: speed)')
     parser.add_argument('-f', '--force', action='store_true', default=False,
-                        help='silently delete data if already exists.')
-    parser.add_argument('-imgrtv', '--image-retrieval', required=True,
-                        help='name of image retrieval')
-    parser.add_argument('-kpt', '--keypoints-matching', required=True,
-                        help='name of keypoints-exctraction/matching method')
-    parser.add_argument('-opt', '--optimizer-cloud', required=True,
-                        help='name of 3d point-cloud optimizer')    
-    parser.add_argument('--topk',  default=1, help='top k image-retrievals')
-    parser.add_argument('--result-path',  default='result', help='path to result of evaluation')
-    parser.add_argument('--dataset',   default='val', type=str, choices=['val', 'full'], help='maps of dataset')
+                        help='Silently delete data if already exists')
+    parser.add_argument('--topk',  default=1, help='Top-k image-retrievals')
+    parser.add_argument('--result_path',  default='result', help='Path where to store the result of evaluation')
+    parser.add_argument('--dataset',   default='val', type=str, choices=['val', 'full'], 
+                        help='Maps of dataset')
 
     args = parser.parse_args()
     pipeline_eval(args.dataset_root , args.image_retrieval, args.keypoints_matching, 
-                args.optimizer_cloud, args.topk, args.result_path, args.dataset, args.force)
+                  args.optimizer_cloud, args.topk, args.result_path, args.dataset, 
+                  args.force, args.netvlad_config)
 
 if __name__ == '__main__':    
     print('>>>> PNTR framework\n')

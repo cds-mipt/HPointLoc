@@ -90,5 +90,5 @@ python3 /path/to/HPointLoc_repo/pipelines/utils/exctracting_dataset.py --dataset
 6. Start pipeline evaluation:
 ```bash
 cd /path/to/HPointLoc_repo
-python3 pipelines/pipeline_evaluate.py --dataset_root /path/to/extracted_dataset --image-retrieval patchnetvlad --keypoints-matching superpoint_superglue --optimizer-cloud teaser
+python3 pipelines/pipeline_evaluate.py --dataset_root /path/to/extracted_dataset --image_retrieval patchnetvlad --keypoints_matching superpoint_superglue --optimizer_cloud teaser
 ```
