@@ -68,7 +68,8 @@ def get_angular_error(R_exp, R_est):
     """
     return abs(np.arccos(min(max(((np.matmul(R_exp.T, R_est)).trace() - 1) / 2, -1.0), 1.0)));
 
-def cloud_3d_cam(x, y, depth, fx = 128, fy = 128, cx = 128, cy = 128):
+def cloud_3d_cam(x, y, depth, fx = 830.93694071386, fy = 830.93694071386, 
+                 cx = 572.169579679035, cy = 309.80029849197297):
     if depth <= 0:
         return 0
     new_x = (x - cx)*depth/fx

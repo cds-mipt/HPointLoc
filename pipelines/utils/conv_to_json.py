@@ -22,9 +22,9 @@ def conv_to_json(dataset_root, path_to_npz_folder, output_dir):
         # q = '_'.join(pair_npz.split('_')[:4])  # TODO: в конце это используется как ключ для словаря
         # db = '_'.join(pair_npz.split('_')[4:8])  # TODO: но есть ли смысл? может использовать name?
 
-        q_depth_file_path = join(dataset_root, q_folder, 'depth', q_name+'.png')
-        db_depth_file_path = join(dataset_root, db_folder, 'depth', db_name+'.png')
-
+        q_depth_file_path = join(dataset_root, q_folder, 'depths', q_name+'.png')
+        db_depth_file_path = join(dataset_root, db_folder, 'depths', db_name+'.png')
+        
         q_depth = cv2.imread(q_depth_file_path, cv2.IMREAD_GRAYSCALE)
         db_depth = cv2.imread(db_depth_file_path, cv2.IMREAD_GRAYSCALE)
 

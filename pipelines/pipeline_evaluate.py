@@ -162,7 +162,7 @@ def pipeline_eval(dataset_root, image_retrieval, keypoints_matching,
     keypoints_matching_stage(keypoints_matching, dataset_root, pairsfile_path_full, 
                                     local_features_path_full, force, root_dir)
     
-    raise Exception("Next stage not implemented yet")  # временная заглушка
+    # raise Exception("Next stage not implemented yet")  # временная заглушка
     ###point cloud optimization
     output_dir = join(root_dir, result_path, dataset, 'pose_optimization')
     pose_optimization(dataset_root, pairsfile_path_full, local_features_path_full, 
