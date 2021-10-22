@@ -4,6 +4,8 @@ from utils.functions import quaternion_to_rotation_matrix, clouds3d_from_kpt, is
 from scipy.spatial.transform import Rotation as R
 import re
 from pathlib import Path
+import json
+import os
 from os.path import join, exists, isfile
 import open3d as o3d
 import numpy as np
@@ -26,102 +28,105 @@ def icp(dataset_root, path_image_retrieval, path_loc_features_matches, output_di
     icp_numbers = 0
     query_numbers = 0
     threshold = 1.4
-    root_datasets = Path(dataset_root).parent
-    dataset_path =  join(root_datasets, 'HPointLoc_dataset')
+    os.makedirs(output_dir, exist_ok = True)
+    path_result_poses = join(output_dir, 'PNTR.json')
+    path_result_kitti_poses = join(output_dir, 'result_kitti.txt')
+    
+    q_poses_file_path = join(dataset_root, 'query/poses.json')
+    db_poses_file_path = join(dataset_root, 'database/poses.json')
+    
+    q_poses = {}
+    with open(q_poses_file_path) as f:
+        q_poses = json.load(f)
+
+    db_poses = {}
+    with open(db_poses_file_path) as f:
+        db_poses = json.load(f)
+
+    final_res = {}
+    estimated_kitti = []
 
     with open(path_image_retrieval, 'r') as f:
         for pair in tqdm(f.readlines()[2:]):
             query_numbers += 1
-            q, m, score = pair.split(', ')
-            q = q.split('records_data/')[1]
-            m = m.split('records_data/')[1]
+            q_img_file_path, db_img_file_path, score = pair.split(', ')
 
-            q_fold, q_cloud, q_name = q.split('/')
-            m_fold, m_cloud, m_name = m.split('/')
+            q_name = q_img_file_path.split('/')[-1].split('.')[0]
+            db_name = db_img_file_path.split('/')[-1].split('.')[0]
             
-            q_cloud = q_fold + '_point' + q_cloud + '.hdf5'
-            m_cloud = m_fold + '_point' + m_cloud + '.hdf5'
+            q_pose = q_poses[q_name]
+            db_pose = db_poses[db_name]
 
-            hdf5_q_path = join(dataset_path, q_fold, q_cloud)
-            hdf5_m_path = join(dataset_path, m_fold, m_cloud)
+            gt_q_position = np.array(q_pose['position'])
+            db_position = np.array(db_pose['position'])
 
-            q_file = h5py.File(hdf5_q_path, 'r')
-            m_file = h5py.File(hdf5_m_path, 'r')
+            gt_q_orientation_quat = np.array(q_pose['orientation'])
+            gt_q_orientation_quat_xyzw = [gt_q_orientation_quat[1], 
+                                          gt_q_orientation_quat[2], 
+                                          gt_q_orientation_quat[3], 
+                                          gt_q_orientation_quat[0]]
+            gt_q_orientation_r = R.from_quat(gt_q_orientation_quat_xyzw)
             
-            rgb_base = m_file['rgb_base']
-            depth_base = m_file['depth_base']
-            gps_base = m_file['gps_base']
-            quat_base = m_file['quat_base']
-            
-            rgb = q_file['rgb']
-            depth = q_file['depth']
-            gps = q_file['gps']
-            quat = q_file['quat']
+            db_orientation_quat = np.array(db_pose['orientation'])
 
-            q_name = int(re.findall(r'\d+', q_name)[0])
-            m_name = int(re.findall(r'\d+', m_name)[0])
-
-            gt_transl = gps[q_name]
-            gt_quat_wxyz = quat[q_name]
-            gt_quat_xyzw = [gt_quat_wxyz[1], gt_quat_wxyz[2], gt_quat_wxyz[3], gt_quat_wxyz[0]]
-
-            estimated_transl = gps_base[m_name]
-            estimated_quat_wxyz = quat_base[m_name]
-            estimated_quat_xyzw = [estimated_quat_wxyz[1], estimated_quat_wxyz[2], estimated_quat_wxyz[3], estimated_quat_wxyz[0]]
+            estimated_orientation_quat = db_orientation_quat
+            estimated_orientation_quat_xyzw = [estimated_orientation_quat[1], 
+                                               estimated_orientation_quat[2], 
+                                               estimated_orientation_quat[3], 
+                                               estimated_orientation_quat[0]]
+            estimated_orientation_r = R.from_quat(estimated_orientation_quat_xyzw)
+            estimated_position = db_position
         
-            pairpath = q.replace('/','_') + '_' + m.replace('/','_') +'.json'
+            pairpath = q_name + '_' + db_name +'.json'
             fullpath = join(path_loc_features_matches, pairpath)
 
-            fullpath = re.sub('.png', '', fullpath)
+            points_3d_query, points_3d_db = clouds3d_from_kpt(fullpath)
 
-            points_3d_query, points_3d_mapping = clouds3d_from_kpt(fullpath) 
+            print("\n-------")
+            print(f"DEBUG: \n\t3d_query shape: {points_3d_query.shape}\n\t3d_db shape: {points_3d_db.shape}")
 
-            if points_3d_mapping.shape[1] > 1:
+            if points_3d_db.shape[1] > 1:
                 target = o3d.geometry.PointCloud()
                 target.points = o3d.utility.Vector3dVector(points_3d_query.transpose())  
                 source = o3d.geometry.PointCloud()
-                source.points = o3d.utility.Vector3dVector(points_3d_mapping.transpose())  
+                source.points = o3d.utility.Vector3dVector(points_3d_db.transpose())  
 
-                reg_p2p = o3d.registration.registration_icp(
+                reg_p2p = o3d.pipelines.registration.registration_icp(
                     source, target, threshold, trans_init,
-                    o3d.registration.TransformationEstimationPointToPoint())
+                    o3d.pipelines.registration.TransformationEstimationPointToPoint())
 
-                Rotation = reg_p2p.transformation[:3,:3]
+                rotation = reg_p2p.transformation[:3,:3]
                 translation = reg_p2p.transformation[:3,3]
 
-                gt_mapping_4x4 = np.zeros((4,4))
-                gt_mapping_4x4[:3,:3] = quaternion_to_rotation_matrix(estimated_quat_wxyz)
-                gt_mapping_4x4[:3,3] = estimated_transl
-                gt_mapping_4x4[-1,-1] = 1
+                db_4x4 = np.eye(4)
+                db_4x4[:3, :3] = estimated_orientation_r.as_matrix()
+                db_4x4[:3, 3] = estimated_position
 
+                transformation_4x4 = np.eye(4)
+                transformation_4x4[:3,:3] = rotation
+                transformation_4x4[:3,3] = translation
 
-                translation_4x4 = list(translation)
-                translation_4x4.append(1.0)
-                transformation_4x4 = np.zeros((4,4))
-                transformation_4x4[:3,:3] = Rotation
-                transformation_4x4[:,3] = translation_4x4
+                predict_4x4 = db_4x4 @ np.linalg.inv(transformation_4x4)
+                predict_quat_xyzw = R.from_matrix(predict_4x4[:3,:3]).as_quat()
+                predict_quat = [predict_quat_xyzw[3], predict_quat_xyzw[0], 
+                                predict_quat_xyzw[1], predict_quat_xyzw[2]]
+                predict_position = predict_4x4[:3,3]
 
-                predict = gt_mapping_4x4 @ np.linalg.inv(transformation_4x4)
-                quat_predict = R.from_matrix(predict[:3,:3]).as_quat()
-                qw_qx_qy_qz_predict = [quat_predict[3], quat_predict[0], quat_predict[1], quat_predict[2]]
-                xyz_predict = predict[:3,3]
-
-                if not np.isnan(qw_qx_qy_qz_predict).any():
+                if not np.isnan(predict_quat).any():
                     icp_numbers += 1
-                    estimated_transl = xyz_predict
-                    estimated_quat_wxyz = qw_qx_qy_qz_predict
-                    estimated_quat_xyzw = [estimated_quat_wxyz[1], estimated_quat_wxyz[2], estimated_quat_wxyz[3], estimated_quat_wxyz[0]]
+                    estimated_position = predict_position
+                    estimated_orientation_quat = predict_quat
+                    estimated_orientation_quat_xyzw = predict_quat_xyzw
+                    estimated_orientation_r = R.from_quat(estimated_orientation_quat_xyzw)
 
             pose_estimated = np.eye(4)
             pose_gt = np.eye(4)
 
-            r = R.from_quat(estimated_quat_xyzw)
-            pose_estimated[:3, :3] = r.as_matrix()
-            pose_estimated[:3, 3] = estimated_transl
+            pose_estimated[:3, :3] = estimated_orientation_r.as_matrix()
+            pose_estimated[:3, 3] = estimated_position
 
-            r = R.from_quat(gt_quat_xyzw)
-            pose_gt[:3, :3] = r.as_matrix()
-            pose_gt[:3, 3] = gt_transl
+            pose_gt[:3, :3] = gt_q_orientation_r.as_matrix()
+            pose_gt[:3, 3] = gt_q_position
 
             error_pose = np.linalg.inv(pose_estimated) @ pose_gt
 
@@ -132,6 +137,7 @@ def icp(dataset_root, path_image_retrieval, path_loc_features_matches, output_di
             angle_error = (np.sum(rotvec**2)**0.5) * 180 / 3.14159265353
             angle_error = abs(90 - abs(angle_error-90))
 
+            print(f"DEBUG: dist_error = {dist_error}; angle_error = {angle_error}")
 
             if  dist_error < 0.25:
                 results["(0.25m)"] += 1
