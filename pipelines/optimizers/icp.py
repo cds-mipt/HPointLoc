@@ -10,7 +10,7 @@ from os.path import join, exists, isfile
 import open3d as o3d
 import numpy as np
 
-def icp(dataset_root, path_image_retrieval, path_loc_features_matches, output_dir, topk=1):
+def icp(dataset_root, query, path_image_retrieval, path_loc_features_matches, output_dir, topk=1):
     trans_init = np.asarray([[1,0,0,0],   
                             [0,1,0,0],   
                             [0,0,1,0], 
@@ -32,7 +32,7 @@ def icp(dataset_root, path_image_retrieval, path_loc_features_matches, output_di
     path_result_poses = join(output_dir, 'PNTR.json')
     path_result_kitti_poses = join(output_dir, 'result_kitti.txt')
     
-    q_poses_file_path = join(dataset_root, 'query/poses.json')
+    q_poses_file_path = join(dataset_root, f'{query}/poses.json')
     db_poses_file_path = join(dataset_root, 'database/poses.json')
     
     q_poses = {}
