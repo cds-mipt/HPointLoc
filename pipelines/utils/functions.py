@@ -43,7 +43,7 @@ def clouds3d_from_kpt(path):
     for mode in kpt_coord.keys():
         for triple in kpt_coord[mode]:
             x, y, depth_point = triple
-            if depth_point > 0 and not (math.isnan(depth_point) or (math.isinf(depth_point))): 
+            if depth_point > 0: 
                 point_3d_xyz = cloud_3d_cam(x, y, depth_point)
                 
             else:

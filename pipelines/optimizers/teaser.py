@@ -19,7 +19,7 @@ def teaser(dataset_root, path_image_retrieval, path_loc_features_matches, output
     OUTLIER_TRANSLATION_LB = 5
     OUTLIER_TRANSLATION_UB = 10
     solver_params = teaserpp_python.RobustRegistrationSolver.Params()
-    solver_params.cbar2 = 0.05
+    solver_params.cbar2 = 0.5  # 0.05
     solver_params.noise_bound = NOISE_BOUND
     solver_params.estimate_scaling = False
     solver_params.rotation_estimation_algorithm = teaserpp_python.RobustRegistrationSolver.ROTATION_ESTIMATION_ALGORITHM.GNC_TLS
@@ -57,8 +57,11 @@ def teaser(dataset_root, path_image_retrieval, path_loc_features_matches, output
     final_res = {}
     estimated_kitti = []
 
+    dist_errors = []
+    angle_errors = []
+
     with open(path_image_retrieval, 'r') as f:
-        for pair in f.readlines()[2:]:
+        for pair in f.readlines():
             query_numbers += 1
             q_img_file_path, db_img_file_path, score = pair.split(', ')
 
@@ -92,9 +95,6 @@ def teaser(dataset_root, path_image_retrieval, path_loc_features_matches, output
             fullpath = os.path.join(path_loc_features_matches, pairpath)
 
             points_3d_query, points_3d_db = clouds3d_from_kpt(fullpath)
-
-            print("\n-------")
-            print(f"DEBUG: \n\t3d_query shape: {points_3d_query.shape}\n\t3d_db shape: {points_3d_db.shape}")
 
             if points_3d_db.shape[1] > 1:  
                 solver = teaserpp_python.RobustRegistrationSolver(solver_params)
@@ -141,8 +141,11 @@ def teaser(dataset_root, path_image_retrieval, path_loc_features_matches, output
             angle_error = (np.sum(rotvec**2)**0.5) * 180 / 3.14159265353
             angle_error = abs(90 - abs(angle_error-90))
 
-            print(f"DEBUG: dist_error = {dist_error}; angle_error = {angle_error}")
+            print(f"DEBUG: {query_numbers-1} dist_error = {dist_error}; angle_error = {angle_error}")
             
+            dist_errors.append(dist_error)
+            angle_errors.append(angle_error)
+
             if  dist_error < 0.25:
                 results["(0.25m)"] += 1
             if  dist_error < 0.5:
@@ -178,5 +181,7 @@ def teaser(dataset_root, path_image_retrieval, path_loc_features_matches, output
     for key in results.keys():
         results[key] = results[key] / query_numbers
 
-    print('>>>> \n', results, '\n>>>>',)       
-    print('Proportion of optimized:', teaser_numbers / query_numbers)
+    print('\n>>>> \n', results, '\n>>>>')
+    print(f'Mean dist error: {np.mean(dist_errors)}')
+    print(f'Mean angle error: {np.mean(angle_errors)}\n>>>>')
+    print('Proportion of optimized:', teaser_numbers / query_numbers, '\n>>>>\n')

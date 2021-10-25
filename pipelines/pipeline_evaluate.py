@@ -95,6 +95,7 @@ def keypoints_matching_stage(method, dataset_root, input_pairs,
                                         '--superglue', 'outdoor', 
                                         '--max_keypoints', '2048',
                                         '--nms_radius', '3',
+                                        '--viz', '--fast_viz',
                                         '--output_dir', './3rd/SuperGluePretrainedNetwork/dump_match_pairs']
             run_python_command(command, compute_image_pairs_args, None)
         else:
@@ -140,8 +141,8 @@ def pipeline_eval(dataset_root, image_retrieval, keypoints_matching,
     - 3d pose optimization (registration)
     """
     root_dir = os.getcwd()
-    query_image_path = dataset_root + '/imagenames_query_full.txt' 
-    db_image_path = dataset_root + '/imagenames_db_full.txt'
+    query_image_path = dataset_root + f'/{dataset}_imagenames_full.txt' 
+    db_image_path = dataset_root + '/database_imagenames_full.txt'
 
     ###image retrieval
     image_retrieval_path = join(root_dir, result_path, dataset, 'image_retrieval')
@@ -181,14 +182,15 @@ def pipeline_command_line():
                         help='name of keypoints-exctraction/matching method (default: superpoint_superglue)')
     parser.add_argument('--optimizer_cloud', default='teaser',
                         help='name of 3d point-cloud optimizer (default: teaser)')    
-    parser.add_argument('--netvlad_config', default='speed',
-                        help='Patch-NetVLAD configuration (default: speed)')
+    parser.add_argument('--netvlad_config', default='performance',
+                        help='Patch-NetVLAD configuration (default: performance)')
     parser.add_argument('-f', '--force', action='store_true', default=False,
                         help='Silently delete data if already exists')
     parser.add_argument('--topk',  default=1, help='Top-k image-retrievals')
     parser.add_argument('--result_path',  default='result', help='Path where to store the result of evaluation')
-    parser.add_argument('--dataset',   default='val', type=str, choices=['val', 'full'], 
-                        help='Maps of dataset')
+    parser.add_argument('--query',   default='query_00', type=str, 
+                        choices=['query_00', 'query_01', 'query_17'], 
+                        help='Query to run (default: query_00)')
 
     args = parser.parse_args()
     pipeline_eval(args.dataset_root , args.image_retrieval, args.keypoints_matching, 
