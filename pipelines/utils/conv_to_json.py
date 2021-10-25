@@ -17,15 +17,15 @@ def conv_to_json(dataset_root, path_to_npz_folder, output_dir):
         if not pair_npz.endswith('.npz'):
             continue
         npz = np.load(join(path_to_npz_folder, pair_npz))
-        q_folder = pair_npz.split('_')[0]
-        q_name = pair_npz.split('_')[2]
-        db_folder = pair_npz.split('_')[3]
-        db_name = pair_npz.split('_')[5] 
+        q_folder = '_'.join(pair_npz.split('_')[0:2])
+        q_name = pair_npz.split('_')[3]
+        db_folder = pair_npz.split('_')[4]
+        db_name = pair_npz.split('_')[6] 
 
         q_depth_file_path = join(dataset_root, q_folder, 'depths', q_name+'.exr')
         db_depth_file_path = join(dataset_root, db_folder, 'depths', db_name+'.exr')
 
-        print("\n\nDEBUG\n", q_depth_file_path, db_depth_file_path)
+        print("\n\nDEBUG\n", pair_npz, q_depth_file_path, db_depth_file_path)
         
         q_depth = cv2.imread(q_depth_file_path, cv2.IMREAD_UNCHANGED)
         db_depth = cv2.imread(db_depth_file_path, cv2.IMREAD_UNCHANGED)
