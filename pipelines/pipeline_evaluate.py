@@ -109,7 +109,7 @@ def keypoints_matching_stage(method, dataset_root, input_pairs,
     else:
         raise Exception("Wrong name of keypoints-matching method")
 
-def pose_optimization(dataset_root, image_retrieval, kpt_matching, 
+def pose_optimization(dataset_root, query, image_retrieval, kpt_matching, 
                                     pose_optimization, force, output_dir, topk = 1):
     """
     @:param dataset_root: path to dataset
@@ -123,11 +123,11 @@ def pose_optimization(dataset_root, image_retrieval, kpt_matching,
             completed = subprocess.run(['bash', './3rd/teaser.sh'])
         from optimizers.teaser import teaser
         print('>>>> TEASER++ Point cloud registration')
-        teaser(dataset_root, image_retrieval, kpt_matching, output_dir)
+        teaser(dataset_root, query, image_retrieval, kpt_matching, output_dir)
 
     elif pose_optimization == 'icp':
         print('>>>> ICP Point cloud registration')
-        icp(dataset_root, image_retrieval, kpt_matching, output_dir)
+        icp(dataset_root, query, image_retrieval, kpt_matching, output_dir)
     else:
         raise Exception("Wrong name of pose_optimization method")
 
@@ -166,7 +166,7 @@ def pipeline_eval(dataset_root, image_retrieval, keypoints_matching,
     # raise Exception("Next stage not implemented yet")  # временная заглушка
     ###point cloud optimization
     output_dir = join(root_dir, result_path, dataset, 'pose_optimization')
-    pose_optimization(dataset_root, pairsfile_path_full, local_features_path_full, 
+    pose_optimization(dataset_root, dataset, pairsfile_path_full, local_features_path_full, 
                                     optimizer_cloud, force, output_dir, topk)
 
 def pipeline_command_line():

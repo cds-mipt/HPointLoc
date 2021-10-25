@@ -11,7 +11,7 @@ import json
 
 os.environ["OMP_NUM_THREADS"] = "12"
 
-def teaser(dataset_root, path_image_retrieval, path_loc_features_matches, output_dir, topk=1):
+def teaser(dataset_root, query, path_image_retrieval, path_loc_features_matches, output_dir, topk=1):
     NOISE_BOUND = 0.5 # 0.05
     N_OUTLIERS = 1700
     N_INLIERS = 400
@@ -43,7 +43,7 @@ def teaser(dataset_root, path_image_retrieval, path_loc_features_matches, output
     path_result_poses = join(output_dir, 'PNTR.json')
     path_result_kitti_poses = join(output_dir, 'result_kitti.txt')
     
-    q_poses_file_path = join(dataset_root, 'query/poses.json')
+    q_poses_file_path = join(dataset_root, f'{query}/poses.json')
     db_poses_file_path = join(dataset_root, 'database/poses.json')
     
     q_poses = {}

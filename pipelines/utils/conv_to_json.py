@@ -24,6 +24,8 @@ def conv_to_json(dataset_root, path_to_npz_folder, output_dir):
 
         q_depth_file_path = join(dataset_root, q_folder, 'depths', q_name+'.exr')
         db_depth_file_path = join(dataset_root, db_folder, 'depths', db_name+'.exr')
+
+        print("\n\nDEBUG\n", q_depth_file_path, db_depth_file_path)
         
         q_depth = cv2.imread(q_depth_file_path, cv2.IMREAD_UNCHANGED)
         db_depth = cv2.imread(db_depth_file_path, cv2.IMREAD_UNCHANGED)
