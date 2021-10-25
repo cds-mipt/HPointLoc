@@ -194,7 +194,7 @@ def pipeline_command_line():
 
     args = parser.parse_args()
     pipeline_eval(args.dataset_root , args.image_retrieval, args.keypoints_matching, 
-                  args.optimizer_cloud, args.topk, args.result_path, args.dataset, 
+                  args.optimizer_cloud, args.topk, args.result_path, args.query, 
                   args.force, args.netvlad_config)
 
 if __name__ == '__main__':    
