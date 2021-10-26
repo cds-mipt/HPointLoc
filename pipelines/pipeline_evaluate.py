@@ -77,7 +77,7 @@ def image_retrieval_stage(method, dataset_root, query_path, db_path,
 
     return pairsfile_path_full
 
-def keypoints_matching_stage(method, dataset_root, input_pairs, 
+def keypoints_matching_stage(method, dataset_root, query, input_pairs, 
                                         output_dir, force = False, root_dir = None):
     """
     @:param method: name of keypoints matching method
@@ -103,7 +103,7 @@ def keypoints_matching_stage(method, dataset_root, input_pairs,
 
         if not exists(output_dir) or force:   
             print('>>>> converting keypoints to json format file')  
-            conv_to_json(dataset_root, './3rd/SuperGluePretrainedNetwork/dump_match_pairs', output_dir) 
+            conv_to_json(dataset_root, query, './3rd/SuperGluePretrainedNetwork/dump_match_pairs', output_dir) 
     elif method == 'loftr':
         loftr(dataset_root, input_pairs, output_dir, root_dir)
     else:
@@ -131,8 +131,8 @@ def pose_optimization(dataset_root, query, image_retrieval, kpt_matching,
     else:
         raise Exception("Wrong name of pose_optimization method")
 
-def pipeline_eval(dataset_root, image_retrieval, keypoints_matching, 
-                  optimizer_cloud, topk, result_path, dataset, force, netvlad_config):
+def pipeline_eval(dataset_root, query, image_retrieval, keypoints_matching, 
+                  optimizer_cloud, topk, result_path, force, netvlad_config):
 
     """
     Evaluate Place recognition pipeline. Pipeline consists of 3 stages:
@@ -141,11 +141,11 @@ def pipeline_eval(dataset_root, image_retrieval, keypoints_matching,
     - 3d pose optimization (registration)
     """
     root_dir = os.getcwd()
-    query_image_path = dataset_root + f'/{dataset}_imagenames_full.txt' 
+    query_image_path = dataset_root + f'/{query}_imagenames_full.txt' 
     db_image_path = dataset_root + '/database_imagenames_full.txt'
 
     ###image retrieval
-    image_retrieval_path = join(root_dir, result_path, dataset, 'image_retrieval')
+    image_retrieval_path = join(root_dir, result_path, query, 'image_retrieval')
     if not exists(image_retrieval_path):
         os.makedirs(image_retrieval_path)
     
@@ -154,19 +154,19 @@ def pipeline_eval(dataset_root, image_retrieval, keypoints_matching,
                                                 force, netvlad_config)
         
     ###local features
-    local_featue_path = join(root_dir, result_path, dataset, 'keypoints')
+    local_featue_path = join(root_dir, result_path, query, 'keypoints')
     if not exists(local_featue_path):
         os.makedirs(local_featue_path)
 
     keypoints_path = f'{image_retrieval}_{keypoints_matching}'
     local_features_path_full =  join(local_featue_path, keypoints_path)
-    keypoints_matching_stage(keypoints_matching, dataset_root, pairsfile_path_full, 
+    keypoints_matching_stage(keypoints_matching, dataset_root, query, pairsfile_path_full, 
                                     local_features_path_full, force, root_dir)
     
     # raise Exception("Next stage not implemented yet")  # временная заглушка
     ###point cloud optimization
-    output_dir = join(root_dir, result_path, dataset, 'pose_optimization')
-    pose_optimization(dataset_root, dataset, pairsfile_path_full, local_features_path_full, 
+    output_dir = join(root_dir, result_path, query, 'pose_optimization')
+    pose_optimization(dataset_root, query, pairsfile_path_full, local_features_path_full, 
                                     optimizer_cloud, force, output_dir, topk)
 
 def pipeline_command_line():
@@ -193,8 +193,8 @@ def pipeline_command_line():
                         help='Query to run (default: query_00)')
 
     args = parser.parse_args()
-    pipeline_eval(args.dataset_root , args.image_retrieval, args.keypoints_matching, 
-                  args.optimizer_cloud, args.topk, args.result_path, args.query, 
+    pipeline_eval(args.dataset_root, args.query, args.image_retrieval, args.keypoints_matching, 
+                  args.optimizer_cloud, args.topk, args.result_path,
                   args.force, args.netvlad_config)
 
 if __name__ == '__main__':    

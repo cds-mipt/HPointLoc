@@ -10,12 +10,16 @@ import cv2
 
 # MAXDEPTH = 10
 
-def conv_to_json(dataset_root, path_to_npz_folder, output_dir):
-    pairs_npz = os.listdir(path_to_npz_folder) 
+def conv_to_json(dataset_root, query, path_to_npz_folder, output_dir):
+    pairs_npz_listdir = os.listdir(path_to_npz_folder)
+    pairs_npz = []
+    for filename in pairs_npz_listdir:
+        if filename.endswith('.npz') and filename.startswith(query):
+            pairs_npz.append(filename)
+    if len(pairs_npz) == 0:
+        raise RuntimeError("No matched pair npz files found!")
     os.makedirs(output_dir, exist_ok = True)
     for pair_npz in tqdm(pairs_npz):
-        if not pair_npz.endswith('.npz'):
-            continue
         npz = np.load(join(path_to_npz_folder, pair_npz))
         q_folder = '_'.join(pair_npz.split('_')[0:2])
         q_name = pair_npz.split('_')[3]
