@@ -11,32 +11,24 @@ from tqdm import tqdm
 from scipy.spatial.transform import Rotation as R
 
 
-def compute_position(init_position, translation):
-    return init_position + translation
-
-
-def compute_orientation_quat(init_orientation_quat, rotation_matrix):
-    init_orientation_quat_xyzw = [init_orientation_quat[1],
-                                  init_orientation_quat[2],
-                                  init_orientation_quat[3],
-                                  init_orientation_quat[0]]
-    init_rotation = R.from_quat(init_orientation_quat_xyzw)
-    relative_rotation = R.from_matrix(rotation_matrix)
-    absolute_rotation_matrix = init_rotation.as_matrix() @ relative_rotation.as_matrix()
-    absolute_quat = R.from_matrix(absolute_rotation_matrix).as_quat()
-    absolute_quat_wxyz = np.array([absolute_quat[3],
-                                   absolute_quat[0],
-                                   absolute_quat[1],
-                                   absolute_quat[2]])
-    return absolute_quat_wxyz
-
-
 def compute_pose(init_position, init_orientation_quat, kitti_pose):
-    pose_matrix = kitti_pose.reshape(3, 4)
-    translation = np.squeeze(pose_matrix[:,3])
-    rotation_matrix = pose_matrix[:,:3]
-    position = compute_position(init_position, translation)
-    orientation = compute_orientation_quat(init_orientation_quat, rotation_matrix)
+    init_4x4 = np.eye(4)
+    init_orientation_quat_xyzw = np.array([init_orientation_quat[1],
+                                           init_orientation_quat[2],
+                                           init_orientation_quat[3],
+                                           init_orientation_quat[0]])
+    init_rotation = R.from_quat(init_orientation_quat_xyzw)
+    init_4x4[:3, :3] = init_rotation.as_matrix()
+    init_4x4[:3, 3] = init_position
+    transformation_4x4 = np.eye(4)
+    transformation_4x4[:3, :] = kitti_pose.reshape(3,4)
+    new_pose_4x4 = init_4x4 @ transformation_4x4
+    position = new_pose_4x4[:3,3]
+    orientation_xyzw = R.from_matrix(new_pose_4x4[:3, :3]).as_quat()
+    orientation = [orientation_xyzw[3],
+                   orientation_xyzw[0],
+                   orientation_xyzw[1],
+                   orientation_xyzw[2]]
     return {'position': list(position), 'orientation': list(orientation)}
 
 
@@ -62,8 +54,6 @@ def main(args):
     os.makedirs(join(output_dir, 'images'), exist_ok=True)
     os.makedirs(join(output_dir, 'depths'), exist_ok=True)
     
-    # TODO: images and depth extraction
-
     init_position = np.array([initial_pose_data['position']['x'],
                               initial_pose_data['position']['y'],
                               initial_pose_data['position']['z']])
