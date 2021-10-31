@@ -198,9 +198,11 @@ def teaser(dataset_root, query, path_image_retrieval, path_loc_features_matches,
                     netvlad_results["(5m, 20°)"] += 1
 
             final_res[q_name] = {'db_match': db_name,
-                                 'estimated_pose_kitti': list(pose_estimated[:3, :].flatten()),
-                                 'estimated_pose': {'position': list(estimated_position),
+                                 'optimizer_pose_kitti': list(pose_estimated[:3, :].flatten()),
+                                 'optimizer_pose': {'position': list(estimated_position),
                                                     'orientation': list(estimated_orientation_quat)},
+                                 'netvlad_pose': {'position': list(db_position),
+                                                  'orientation': list(db_orientation_quat)},
                                  'optimizer_dist_error': optimizer_dist_error,
                                  'optimizer_angle_error': optimizer_angle_error,
                                  'netvlad_dist_error': netvlad_dist_error,
