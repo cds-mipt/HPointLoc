@@ -2,7 +2,7 @@ import teaserpp_python
 import os
 import h5py
 from utils.functions import quaternion_to_rotation_matrix, clouds3d_from_kpt,\
-                            is_invertible, compute_errors
+                            is_invertible, compute_errors, print_results
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 import re
@@ -226,8 +226,10 @@ def teaser(dataset_root, query, path_image_retrieval, path_loc_features_matches,
     for key in results.keys():
         results[key] = results[key] / query_numbers
 
-    print('\n\n>>>> Metrics without optimization: \n', netvlad_results, '\n>>>>')
-    print('\n>>>> Metrics after pose optimization: \n', results, '\n>>>>')
+    for key in netvlad_results.keys():
+        netvlad_results[key] = netvlad_results[key] / query_numbers
+
+    print_results(netvlad_results, results, optimizer_type="TEASER++")
     print('Mean dist error:')
     print(f'\twithout optimization: {np.mean(netvlad_dist_errors)}')
     print(f'\tafter optimization: {np.mean(optimizer_dist_errors)}')

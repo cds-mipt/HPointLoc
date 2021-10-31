@@ -144,3 +144,26 @@ def cloud_3d_cam(x, y, depth,
 
 def is_invertible(a):
     return a.shape[0] == a.shape[1] and np.linalg.matrix_rank(a) == a.shape[0]
+
+
+def print_results(netvlad_results, optimizer_results, optimizer_type = ""):
+    print("\n\n>>>> Metrics without optimization:")
+    print("\t(5m, 20°): {:.4f},\t(1m, 10°): {:.4f},".format(netvlad_results['(5m, 20°)'],
+                                                            netvlad_results['(1m, 10°)']),
+          "\t(0.5m, 5°): {:.4f},\t(0.25m, 2°): {:.4f}".format(netvlad_results['(0.5m, 5°)'],
+                                                              netvlad_results['(0.25m, 2°)']))
+    print("\t(5m): {:.4f},\t\t(1m): {:.4f},".format(netvlad_results['(5m)'],
+                                                    netvlad_results['(1m)']),
+          "\t\t(0.5m): {:.4f},\t\t(0.25m): {:.4f}".format(netvlad_results['(0.5m)'],
+                                                          netvlad_results['(0.25m)']))
+    
+    print(f"\n>>>> Metrics after optimization ({optimizer_type}):")
+    print("\t(5m, 20°): {:.4f},\t(1m, 10°): {:.4f},".format(optimizer_results['(5m, 20°)'],
+                                                            optimizer_results['(1m, 10°)']),
+          "\t(0.5m, 5°): {:.4f},\t(0.25m, 2°): {:.4f}".format(optimizer_results['(0.5m, 5°)'],
+                                                              optimizer_results['(0.25m, 2°)']))
+    print("\t(5m): {:.4f},\t\t(1m): {:.4f},".format(optimizer_results['(5m)'],
+                                                    optimizer_results['(1m)']),
+          "\t\t(0.5m): {:.4f},\t\t(0.25m): {:.4f}".format(optimizer_results['(0.5m)'],
+                                                          optimizer_results['(0.25m)']))
+    print('\n>>>>')
