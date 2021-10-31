@@ -1,7 +1,8 @@
 import teaserpp_python
 import os
 import h5py
-from utils.functions import quaternion_to_rotation_matrix, clouds3d_from_kpt, is_invertible
+from utils.functions import quaternion_to_rotation_matrix, clouds3d_from_kpt,\
+                            is_invertible, compute_errors
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 import re
@@ -37,11 +38,25 @@ def teaser(dataset_root, query, path_image_retrieval, path_loc_features_matches,
         "(0.5m)": 0,
         "(0.25m)": 0
     }
+
+    netvlad_results = {
+        "(5m, 20°)": 0,
+        "(1m, 10°)": 0,
+        "(0.5m, 5°)": 0,
+        "(0.25m, 2°)": 0,
+        "(5m)": 0,
+        "(1m)": 0,
+        "(0.5m)": 0,
+        "(0.25m)": 0
+    }
+
     teaser_numbers = 0
     query_numbers = 0
     os.makedirs(output_dir, exist_ok = True)
-    path_result_poses = join(output_dir, 'PNTR.json')
-    path_result_kitti_poses = join(output_dir, 'result_kitti.txt')
+    path_result_poses = join(output_dir, 'PNTR_teaser.json')
+    path_transformations = join(output_dir, 'transformations_teaser.json')
+    path_result_kitti_poses = join(output_dir, 'result_kitti_teaser.txt')
+    path_gt_kitti_poses = join(output_dir, 'gt_kitti.txt')
     
     q_poses_file_path = join(dataset_root, f'{query}/poses.json')
     db_poses_file_path = join(dataset_root, 'database/poses.json')
@@ -56,9 +71,13 @@ def teaser(dataset_root, query, path_image_retrieval, path_loc_features_matches,
 
     final_res = {}
     estimated_kitti = []
+    gt_kitti = []
+    transformations_4x4 = {}
 
-    dist_errors = []
-    angle_errors = []
+    netvlad_dist_errors = []
+    netvlad_angle_errors = []
+    optimizer_dist_errors = []
+    optimizer_angle_errors = []
 
     with open(path_image_retrieval, 'r') as f:
         for pair in f.readlines():
@@ -101,15 +120,17 @@ def teaser(dataset_root, query, path_image_retrieval, path_loc_features_matches,
                 solver.solve(points_3d_db, points_3d_query)
                 rotation = solver.getSolution().rotation
                 translation = solver.getSolution().translation
-                scale = solver.getSolution().scale
+                # scale = solver.getSolution().scale
 
                 db_4x4 = np.eye(4)
                 db_4x4[:3, :3] = estimated_orientation_r.as_matrix()
-                db_4x4[:3, 3] = estimated_position
+                db_4x4[:3, 3] = db_position
 
                 transformation_4x4 = np.eye(4)
                 transformation_4x4[:3,:3] = rotation
                 transformation_4x4[:3,3] = translation
+
+                transformations_4x4[q_name] = transformation_4x4.tolist()
                 
                 if is_invertible(transformation_4x4):
                     predict_4x4 = db_4x4 @ np.linalg.inv(transformation_4x4)
@@ -134,54 +155,83 @@ def teaser(dataset_root, query, path_image_retrieval, path_loc_features_matches,
             pose_gt[:3, :3] = gt_q_orientation_r.as_matrix()
             pose_gt[:3, 3] = gt_q_position
 
-            error_pose = np.linalg.inv(pose_estimated) @ pose_gt
-            dist_error = np.sum(error_pose[:3, 3]**2) ** 0.5
-            r = R.from_matrix(error_pose[:3, :3])
-            rotvec = r.as_rotvec()
-            angle_error = (np.sum(rotvec**2)**0.5) * 180 / 3.14159265353
-            angle_error = abs(90 - abs(angle_error-90))
-
-            print(f"DEBUG: {query_numbers-1} dist_error = {dist_error}; angle_error = {angle_error}")
+            optimizer_dist_error, optimizer_angle_error = compute_errors(pose_estimated, pose_gt)
+            netvlad_dist_error, netvlad_angle_error = compute_errors(db_4x4, pose_gt)
             
-            dist_errors.append(dist_error)
-            angle_errors.append(angle_error)
+            optimizer_dist_errors.append(optimizer_dist_error)
+            optimizer_angle_errors.append(optimizer_angle_error)
+            netvlad_dist_errors.append(netvlad_dist_error)
+            netvlad_angle_errors.append(netvlad_angle_error)
 
-            if  dist_error < 0.25:
+            if  optimizer_dist_error < 0.25:
                 results["(0.25m)"] += 1
-            if  dist_error < 0.5:
+                if optimizer_angle_error < 2:
+                    results["(0.25m, 2°)"] += 1
+            if  optimizer_dist_error < 0.5:
                 results["(0.5m)"] += 1
-            if  dist_error < 1:
+                if optimizer_angle_error < 5:
+                    results["(0.5m, 5°)"] += 1
+            if  optimizer_dist_error < 1:
                 results["(1m)"] += 1
-            if  dist_error < 5:
+                if optimizer_angle_error < 10:
+                    results["(1m, 10°)"] += 1
+            if  optimizer_dist_error < 5:
                 results["(5m)"] += 1    
+                if optimizer_angle_error < 20:
+                    results["(5m, 20°)"] += 1
 
-            if angle_error < 2 and dist_error < 0.25:
-                results["(0.25m, 2°)"] += 1
-            if angle_error < 5 and dist_error < 0.5:
-                results["(0.5m, 5°)"] += 1
-            if angle_error < 10 and dist_error < 1:
-                results["(1m, 10°)"] += 1
-            if angle_error < 20 and dist_error < 5:
-                results["(5m, 20°)"] += 1
+            if  netvlad_dist_error < 0.25:
+                netvlad_results["(0.25m)"] += 1
+                if netvlad_angle_error < 2:
+                    netvlad_results["(0.25m, 2°)"] += 1
+            if  netvlad_dist_error < 0.5:
+                netvlad_results["(0.5m)"] += 1
+                if netvlad_angle_error < 5:
+                    netvlad_results["(0.5m, 5°)"] += 1
+            if  netvlad_dist_error < 1:
+                netvlad_results["(1m)"] += 1
+                if netvlad_angle_error < 10:
+                    netvlad_results["(1m, 10°)"] += 1
+            if  netvlad_dist_error < 5:
+                netvlad_results["(5m)"] += 1    
+                if netvlad_angle_error < 20:
+                    netvlad_results["(5m, 20°)"] += 1
 
             final_res[q_name] = {'db_match': db_name,
                                  'estimated_pose_kitti': list(pose_estimated[:3, :].flatten()),
                                  'estimated_pose': {'position': list(estimated_position),
-                                                    'orientation': list(estimated_orientation_quat)}}
+                                                    'orientation': list(estimated_orientation_quat)},
+                                 'optimizer_dist_error': optimizer_dist_error,
+                                 'optimizer_angle_error': optimizer_angle_error,
+                                 'netvlad_dist_error': netvlad_dist_error,
+                                 'netvlad_angle_error': netvlad_angle_error,
+                                }
 
             estimated_pose_kitty = ' '.join(map(str, list(pose_estimated[:3, :].flatten()))) + '\n'
+            gt_pose_kitty = ' '.join(map(str, list(pose_gt[:3, :].flatten()))) + '\n'
             estimated_kitti.append(estimated_pose_kitty)
+            gt_kitti.append(gt_pose_kitty)
     
     with open(path_result_poses, 'w') as result_poses_file:
         json.dump(final_res, result_poses_file)
 
-    with open(path_result_kitti_poses, 'w') as result_kitti_file:
+    with open(path_transformations, 'w') as transformations_file:
+        json.dump(transformations_4x4, transformations_file)
+
+    with open(path_result_kitti_poses, 'w') as result_kitti_file,\
+         open(path_gt_kitti_poses, 'w') as gt_kitti_file:
         result_kitti_file.write(''.join(estimated_kitti))
+        gt_kitti_file.write(''.join(gt_kitti))
             
     for key in results.keys():
         results[key] = results[key] / query_numbers
 
-    print('\n>>>> \n', results, '\n>>>>')
-    print(f'Mean dist error: {np.mean(dist_errors)}')
-    print(f'Mean angle error: {np.mean(angle_errors)}\n>>>>')
+    print('\n\n>>>> Metrics without optimization: \n', netvlad_results, '\n>>>>')
+    print('\n>>>> Metrics after pose optimization: \n', results, '\n>>>>')
+    print('Mean dist error:')
+    print(f'\twithout optimization: {np.mean(netvlad_dist_errors)}')
+    print(f'\tafter optimization: {np.mean(optimizer_dist_errors)}')
+    print(f'Mean angle error:')
+    print(f'\twithout optimization: {np.mean(netvlad_angle_errors)}')
+    print(f'\tafter optimization: {np.mean(optimizer_angle_errors)}\n>>>>')
     print('Proportion of optimized:', teaser_numbers / query_numbers, '\n>>>>\n')

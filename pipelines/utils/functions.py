@@ -17,9 +17,11 @@ CAMERA_INTRINSICS = {'query_00': [859.7086033959424, 859.7086033959424,
                                   572.169579679035, 309.80029849197297]
                     }
 
+
 def camera_center_to_translation(c, qvec):
     R = quaternion_to_rotation_matrix(qvec)
     return (-1) * np.matmul(R, c)
+
 
 def quaternion_to_rotation_matrix(quaternion_wxyz):
     r = R.from_quat([quaternion_wxyz[1], quaternion_wxyz[2], quaternion_wxyz[3], quaternion_wxyz[0]])
@@ -27,6 +29,7 @@ def quaternion_to_rotation_matrix(quaternion_wxyz):
     matrix[:3,2] = -matrix[:3,2]
     matrix[:3,1] = -matrix[:3,1]
     return matrix
+
 
 def get_point_3d(x, y, depth, fx, fy, cx, cy, cam_center_world, R_world_to_cam, w_in_quat_first = True):
     if depth <= 0:
@@ -107,11 +110,23 @@ def clouds3d_from_kpt(path):
     
     return query_3d_points, db_3d_points
 
+
 def get_angular_error(R_exp, R_est):
     """
     Calculate angular error
     """
     return abs(np.arccos(min(max(((np.matmul(R_exp.T, R_est)).trace() - 1) / 2, -1.0), 1.0)));
+
+
+def compute_errors(pose_estimated, pose_gt):
+    error_pose = np.linalg.inv(pose_estimated) @ pose_gt
+    dist_error = np.sum(error_pose[:3, 3]**2) ** 0.5
+    r = R.from_matrix(error_pose[:3, :3])
+    rotvec = r.as_rotvec()
+    angle_error = (np.sum(rotvec**2)**0.5) * 180 / 3.14159265353
+    angle_error = abs(90 - abs(angle_error-90))
+    return dist_error, angle_error
+
 
 def cloud_3d_cam(x, y, depth, 
                  fx = CAMERA_INTRINSICS['database'][0],
@@ -125,6 +140,7 @@ def cloud_3d_cam(x, y, depth,
     new_z = (y - cy)*depth/fy  # yaw
     coord_3D_world_to_cam = np.array([new_x, new_y, new_z], float)
     return coord_3D_world_to_cam
+
 
 def is_invertible(a):
     return a.shape[0] == a.shape[1] and np.linalg.matrix_rank(a) == a.shape[0]
