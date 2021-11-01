@@ -1,5 +1,6 @@
 import argparse
 import os
+from time import time
 from os.path import join, exists
 from utils.subprocces import run_python_command
 from utils.preproccesing_dataset import preprocces_metadata
@@ -38,7 +39,9 @@ def image_retrieval_stage(method, dataset_root, query_path, db_path,
                                     '--dataset_file_path', query_path,
                                     '--dataset_root_dir', dataset_root, 
                                     '--output_features_dir', query_descriptor]
+            query_descriptors_extraction_time = time()
             run_python_command(command, exctraction_stage_args, None)
+            query_descriptors_extraction_time = time - query_descriptors_extraction_time
 
         db_descriptor = join(dataset_root, 'db_descriptor')
         if not exists(db_descriptor) or force:
@@ -58,7 +61,9 @@ def image_retrieval_stage(method, dataset_root, query_path, db_path,
                                     '--query_input_features_dir', query_descriptor,
                                     '--index_input_features_dir', db_descriptor,
                                     '--result_save_folder', image_retrieval_path ]
+            matching_time = time()
             run_python_command(command, matching_stage_args, None)
+            matching_time = time() - matching_time
         
         
         pairsfile_path = f'{method}_{netvlad_config}_top{topk}.txt'
@@ -72,10 +77,12 @@ def image_retrieval_stage(method, dataset_root, query_path, db_path,
                         topkfile.write(string)  
         else:
             print('image retrieval results already computed:......')
+
+        total_time = query_descriptors_extraction_time + matching_time
     else:
         raise Exception("Wrong name of image retrieval method")
 
-    return pairsfile_path_full
+    return pairsfile_path_full, total_time
 
 def keypoints_matching_stage(method, dataset_root, query, input_pairs, 
                                         output_dir, force = False, root_dir = None):
@@ -97,7 +104,9 @@ def keypoints_matching_stage(method, dataset_root, query, input_pairs,
                                         '--nms_radius', '3',
                                         '--viz', '--fast_viz',
                                         '--output_dir', './3rd/SuperGluePretrainedNetwork/dump_match_pairs']
+            match_pairs_time = time()
             run_python_command(command, compute_image_pairs_args, None)
+            match_pairs_time = time() - match_pairs_time
         else:
             print('local feature matching already computed:......')
 
@@ -108,6 +117,8 @@ def keypoints_matching_stage(method, dataset_root, query, input_pairs,
         loftr(dataset_root, input_pairs, output_dir, root_dir)
     else:
         raise Exception("Wrong name of keypoints-matching method")
+
+    return match_pairs_time
 
 def pose_optimization(dataset_root, query, image_retrieval, kpt_matching, 
                                     pose_optimization, force, output_dir, topk = 1):
@@ -123,13 +134,20 @@ def pose_optimization(dataset_root, query, image_retrieval, kpt_matching,
             completed = subprocess.run(['bash', './3rd/teaser.sh'])
         from optimizers.teaser import teaser
         print('>>>> TEASER++ Point cloud registration')
+        optimizer_time = time()
         teaser(dataset_root, query, image_retrieval, kpt_matching, output_dir)
+        optimizer_time = time() - optimizer_time
 
     elif pose_optimization == 'icp':
         print('>>>> ICP Point cloud registration')
+        optimizer_time = time()
         icp(dataset_root, query, image_retrieval, kpt_matching, output_dir)
+        optimizer_time = time() - optimizer_time
     else:
         raise Exception("Wrong name of pose_optimization method")
+    
+    return optimizer_time
+
 
 def pipeline_eval(dataset_root, query, image_retrieval, keypoints_matching, 
                   optimizer_cloud, topk, result_path, force, netvlad_config):
@@ -149,9 +167,10 @@ def pipeline_eval(dataset_root, query, image_retrieval, keypoints_matching,
     if not exists(image_retrieval_path):
         os.makedirs(image_retrieval_path)
     
-    pairsfile_path_full = image_retrieval_stage(image_retrieval, dataset_root, query_image_path, 
-                                                db_image_path, image_retrieval_path, topk, 
-                                                force, netvlad_config)
+    pairsfile_path_full, image_retrieval_time = image_retrieval_stage(image_retrieval,
+                                                    dataset_root, query_image_path,
+                                                    db_image_path, image_retrieval_path,
+                                                    topk, force, netvlad_config)
         
     ###local features
     local_featue_path = join(root_dir, result_path, query, 'keypoints')
@@ -160,14 +179,17 @@ def pipeline_eval(dataset_root, query, image_retrieval, keypoints_matching,
 
     keypoints_path = f'{image_retrieval}_{keypoints_matching}'
     local_features_path_full =  join(local_featue_path, keypoints_path)
-    keypoints_matching_stage(keypoints_matching, dataset_root, query, pairsfile_path_full, 
-                                    local_features_path_full, force, root_dir)
+    matching_time = keypoints_matching_stage(keypoints_matching, dataset_root, query, pairsfile_path_full, 
+                                             local_features_path_full, force, root_dir)
     
     # raise Exception("Next stage not implemented yet")  # временная заглушка
     ###point cloud optimization
     output_dir = join(root_dir, result_path, query, 'pose_optimization')
-    pose_optimization(dataset_root, query, pairsfile_path_full, local_features_path_full, 
-                                    optimizer_cloud, force, output_dir, topk)
+    optimizer_time = pose_optimization(dataset_root, query, pairsfile_path_full, local_features_path_full, 
+                                       optimizer_cloud, force, output_dir, topk)
+
+    return image_retrieval_time, matching_time, optimizer_time
+
 
 def pipeline_command_line():
     """
@@ -193,9 +215,16 @@ def pipeline_command_line():
                         help='Query to run (default: query_00)')
 
     args = parser.parse_args()
-    pipeline_eval(args.dataset_root, args.query, args.image_retrieval, args.keypoints_matching, 
-                  args.optimizer_cloud, args.topk, args.result_path,
-                  args.force, args.netvlad_config)
+
+    image_retrieval_time, matching_time, optimizer_time = pipeline_eval(args.dataset_root, 
+        args.query, args.image_retrieval, args.keypoints_matching, args.optimizer_cloud,
+        args.topk, args.result_path, args.force, args.netvlad_config)
+
+    print('\n>>>> Timings:')
+    print(f"\tPatch-NetVLAD: {image_retrieval_time:.3f} s")
+    print(f"\tSuperPoint+SuperGlue: {matching_time:.3f} s")
+    print(f"\tOptimizer: {optimizer_time:.3f} s")
+    print('>>>>\n')
 
 if __name__ == '__main__':    
     print('\n>>>>')
