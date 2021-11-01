@@ -52,6 +52,7 @@ def teaser(dataset_root, query, path_image_retrieval, path_loc_features_matches,
 
     teaser_numbers = 0
     query_numbers = 0
+    
     os.makedirs(output_dir, exist_ok = True)
     path_result_poses = join(output_dir, 'PNTR_teaser.json')
     path_transformations = join(output_dir, 'transformations_teaser.json')
@@ -115,7 +116,9 @@ def teaser(dataset_root, query, path_image_retrieval, path_loc_features_matches,
 
             points_3d_query, points_3d_db = clouds3d_from_kpt(fullpath)
 
-            if points_3d_db.shape[1] > 1:  
+            assert points_3d_query.shape == points_3d_db.shape 
+            
+            if points_3d_db.shape[0] > 0 and points_3d_db.shape[1] > 1:  
                 solver = teaserpp_python.RobustRegistrationSolver(solver_params)
                 solver.solve(points_3d_db, points_3d_query)
                 rotation = solver.getSolution().rotation
