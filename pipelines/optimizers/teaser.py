@@ -20,7 +20,7 @@ def teaser(dataset_root, query, path_image_retrieval, path_loc_features_matches,
     OUTLIER_TRANSLATION_LB = 5
     OUTLIER_TRANSLATION_UB = 10
     solver_params = teaserpp_python.RobustRegistrationSolver.Params()
-    solver_params.cbar2 = 0.5  # 0.05
+    solver_params.cbar2 = 0.02  # 0.05
     solver_params.noise_bound = NOISE_BOUND
     solver_params.estimate_scaling = False
     solver_params.rotation_estimation_algorithm = teaserpp_python.RobustRegistrationSolver.ROTATION_ESTIMATION_ALGORITHM.GNC_TLS

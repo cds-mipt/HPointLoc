@@ -5,7 +5,7 @@ import math
 import numpy as np
 
 
-MAX_DEPTH = 50
+MAX_DEPTH = np.inf
 
 CAMERA_INTRINSICS = {'query_00': [859.7086033959424, 859.7086033959424, 
                                   559.0216447990299, 309.07840227628515],
@@ -94,7 +94,8 @@ def clouds3d_from_kpt(path):
         db_y = db_point[1]
         db_depth = db_point[2]
 
-        if q_depth <= 0 or db_depth <= 0:
+        if q_depth <= 0 or db_depth <= 0 or \
+           q_depth > MAX_DEPTH or db_depth > MAX_DEPTH:
             continue
 
         query_3d_point = cloud_3d_cam(q_x, q_y, q_depth,
@@ -137,7 +138,7 @@ def cloud_3d_cam(x, y, depth,
         return 0
     new_x = depth  # roll
     new_y = - (x - cx)*depth/fx  # pitch
-    new_z = (y - cy)*depth/fy  # yaw
+    new_z = - (y - cy)*depth/fy  # yaw
     coord_3D_world_to_cam = np.array([new_x, new_y, new_z], float)
     return coord_3D_world_to_cam
 
