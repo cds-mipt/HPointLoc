@@ -107,6 +107,8 @@ def icp(dataset_root, query, path_image_retrieval, path_loc_features_matches, ou
 
             assert points_3d_query.shape == points_3d_db.shape
 
+            transformation_4x4 = np.eye(4)
+
             if points_3d_db.shape[0] > 0 and points_3d_db.shape[1] > 1:
                 target = o3d.geometry.PointCloud()
                 target.points = o3d.utility.Vector3dVector(points_3d_query.transpose())  
@@ -124,7 +126,6 @@ def icp(dataset_root, query, path_image_retrieval, path_loc_features_matches, ou
                 db_4x4[:3, :3] = estimated_orientation_r.as_matrix()
                 db_4x4[:3, 3] = estimated_position
 
-                transformation_4x4 = np.eye(4)
                 transformation_4x4[:3,:3] = rotation
                 transformation_4x4[:3,3] = translation
 
@@ -140,6 +141,8 @@ def icp(dataset_root, query, path_image_retrieval, path_loc_features_matches, ou
                     estimated_orientation_quat = predict_quat
                     estimated_orientation_quat_xyzw = predict_quat_xyzw
                     estimated_orientation_r = R.from_quat(estimated_orientation_quat_xyzw)
+
+            transformations_4x4[q_name] = transformation_4x4.tolist()
 
             pose_estimated = np.eye(4)
             pose_gt = np.eye(4)

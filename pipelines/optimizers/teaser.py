@@ -117,7 +117,9 @@ def teaser(dataset_root, query, path_image_retrieval, path_loc_features_matches,
             points_3d_query, points_3d_db = clouds3d_from_kpt(fullpath)
 
             assert points_3d_query.shape == points_3d_db.shape 
-            
+
+            transformation_4x4 = np.eye(4)
+
             if points_3d_db.shape[0] > 0 and points_3d_db.shape[1] > 1:  
                 solver = teaserpp_python.RobustRegistrationSolver(solver_params)
                 solver.solve(points_3d_db, points_3d_query)
@@ -129,11 +131,8 @@ def teaser(dataset_root, query, path_image_retrieval, path_loc_features_matches,
                 db_4x4[:3, :3] = estimated_orientation_r.as_matrix()
                 db_4x4[:3, 3] = db_position
 
-                transformation_4x4 = np.eye(4)
                 transformation_4x4[:3,:3] = rotation
                 transformation_4x4[:3,3] = translation
-
-                transformations_4x4[q_name] = transformation_4x4.tolist()
                 
                 if is_invertible(transformation_4x4):
                     predict_4x4 = db_4x4 @ np.linalg.inv(transformation_4x4)
@@ -149,6 +148,8 @@ def teaser(dataset_root, query, path_image_retrieval, path_loc_features_matches,
                         estimated_orientation_quat_xyzw = predict_quat_xyzw
                         estimated_orientation_r = R.from_quat(estimated_orientation_quat_xyzw)
 
+            transformations_4x4[q_name] = transformation_4x4.tolist()
+            
             pose_estimated = np.eye(4)
             pose_gt = np.eye(4)
 
