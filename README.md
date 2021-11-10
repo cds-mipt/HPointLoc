@@ -48,6 +48,8 @@ The experiments were held on the **HPointLoc-Val** and **HPointLoc-ALL** dataset
 
 ### With conda:
 
+**Note:** outdated - may need additional actions to work
+
 ```bash
 git clone --recurse-submodules https://github.com/cds-mipt/HPointLoc
 conda env create -f environment.yml
@@ -82,13 +84,33 @@ bash docker/start.sh
 bash docker/into.sh
 ```
 
-5. Extract the dataset if not already:
-```bash
-python3 /path/to/HPointLoc_repo/pipelines/utils/exctracting_dataset.py --dataset_path /path/to/dataset/
-```
-
-6. Start pipeline evaluation:
+5. Start pipeline evaluation:
 ```bash
 cd /path/to/HPointLoc_repo
 python3 pipelines/pipeline_evaluate.py --dataset_root /path/to/extracted_dataset --image_retrieval patchnetvlad --keypoints_matching superpoint_superglue --optimizer_cloud teaser
+```
+
+### Dataset directory structure
+
+```
+.
+└─dataset_folder/
+  ├─query/                   # directory with query data
+    ├─images/                # directory with png images
+      ├─q0000.png
+      ├─...
+    ├─depths/                # directory with depths exr images
+      ├─q0000.exr
+      ├─...
+    ├─poses.json             # json dict with poses, 
+  ├─database/                #   for example: {"q0000": {"position": [x, y, z],                                             
+    ├─images/                #                           "orientation": [w, x, y, z]}}
+      ├─db0000.png 
+      ├─...
+    ├─depths/
+      ├─db0000.exr
+      ├─...
+    ├─poses.json
+  ├─query_imagenames.txt     # txt file with relative paths to all query images
+  ├─database_imagenames.txt  # txt file with relative paths to all database images
 ```
