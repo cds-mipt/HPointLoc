@@ -26,7 +26,7 @@ def image_retrieval_stage(method, dataset_root, query_path, db_path,
                                         'netvlad':'PATH.py', 'hfnet':'PATH.py'}
     matching_stage = {'patchnetvlad':'3rd/Patch-NetVLAD/feature_match.py',}
     command = exct_stage[method]
-
+    
     if method == 'patchnetvlad':
         configfile = '3rd/Patch-NetVLAD/patchnetvlad/configs/{}.ini'.format(netvlad_config)
         assert os.path.isfile(configfile)
@@ -41,7 +41,7 @@ def image_retrieval_stage(method, dataset_root, query_path, db_path,
                                     '--output_features_dir', query_descriptor]
             query_descriptors_extraction_time = time()
             run_python_command(command, exctraction_stage_args, None)
-            query_descriptors_extraction_time = time - query_descriptors_extraction_time
+            query_descriptors_extraction_time = time() - query_descriptors_extraction_time
 
         db_descriptor = join(dataset_root, 'db_descriptor')
         if not exists(db_descriptor) or force:
@@ -129,7 +129,7 @@ def pose_optimization(dataset_root, query, image_retrieval, kpt_matching,
     @:param pose_optimization: name of point cloud optimization method
     """
     if pose_optimization == 'teaser':
-        if not exists('./3rd/TEASER-plusplus/') or force:
+        if not exists('./3rd/TEASER-plusplus/'):
             shutil.rmtree('./3rd/TEASER-plusplus/', ignore_errors=True)
             completed = subprocess.run(['bash', './3rd/teaser.sh'])
         from optimizers.teaser import teaser
