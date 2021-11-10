@@ -129,7 +129,7 @@ def main(opt):
         os.makedirs(output_dir)
 
     fourcc = cv2.VideoWriter_fourcc(*'XVID') 
-    video = cv2.VideoWriter(path.join(output_dir, 'video.avi'),
+    video = cv2.VideoWriter(path.join(output_dir, f'video_{optimizer}.avi'),
                             fourcc, 2, (1446, 1080))
     font = cv2.FONT_HERSHEY_SIMPLEX
     fontScale = 2
@@ -223,7 +223,7 @@ if __name__ == "__main__":
                         help="Configuration for Patch-NetVLAD used for this results evaluation"+\
                              " (default: performance)")
     parser.add_argument('--optimizer', type=str, default='teaser',
-                        choices=['teaser'],
+                        choices=['teaser', 'icp'],
                         help="Optimizer which results will be visualized (default: teaser)")
     parser.add_argument('--dump_match_pairs_dir', type=str,
                         default='./3rd/SuperGluePretrainedNetwork/dump_match_pairs',
