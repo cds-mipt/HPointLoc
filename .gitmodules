@@ -1,10 +1,10 @@
-[submodule "netvlad_pytorch"]
+[submodule "PNTR/netvlad_pytorch"]
 	path = PNTR/netvlad_pytorch
 	url = https://github.com/cds-mipt/netvlad_pytorch.git
-[submodule "cdxslam"]
+[submodule "PNTR/cdxslam"]
 	path = PNTR/cdxslam
 	url = https://github.com/cds-mipt/cdxslam
 	branch = hf_net_habitat
-[submodule "SuperGluePretrainedNetwork"]
+[submodule "PNTR/SuperGluePretrainedNetwork"]
 	path = PNTR/SuperGluePretrainedNetwork
 	url = https://github.com/Skydes/SuperGluePretrainedNetwork.git
